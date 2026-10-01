@@ -86,6 +86,7 @@
             overflow: hidden;
         }
 
+        /* Camada escura para garantir leitura legível sobre qualquer imagem */
         .banner-card::before {
             content: "";
             position: absolute;
@@ -137,7 +138,7 @@
 <body>
 
     <h1>Leitor de QR Code</h1>
-    <p>Aponte a câmera para ler o QR Code.</p>
+    <p>Aponte a câmera traseira para ler o QR Code.</p>
 
     <!-- Área onde o vídeo da câmera será exibido -->
     <div id="reader"></div>
@@ -258,17 +259,20 @@
         function updateBanner() {
             if (bannerItems.length === 0) return;
 
+            // Seleciona um item aleatório da lista
             const randomIndex = Math.floor(Math.random() * bannerItems.length);
             const selectedItem = bannerItems[randomIndex];
 
             const bannerElement = document.getElementById('dynamic-banner');
             const titleElement = document.getElementById('banner-title');
 
+            // Atualiza os dados
             titleElement.innerText = selectedItem.title;
             bannerElement.href = selectedItem.url;
             bannerElement.style.backgroundImage = `url('${selectedItem.imageUrl}')`;
         }
 
+        // Inicializa o primeiro banner e configura a troca a cada 5 minutos (300.000 ms)
         updateBanner();
         setInterval(updateBanner, 300000);
 
@@ -295,29 +299,15 @@
             });
         }
 
-        function handleCameraError(err) {
-            console.error("Erro ao iniciar a câmera:", err);
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            qrConfig, 
+            onScanSuccess
+        ).catch(err => {
+            console.error("Erro ao iniciar a câmera traseira:", err);
             document.getElementById('result').innerHTML = 
-                `<p style="color:red;">Não foi possível acessar a câmera. Verifique se concedeu permissão no app/navegador e se a conexão é HTTPS.</p>`;
-        }
-
-        // Inicialização direta solicitando a câmera traseira (ideal para WebViews)
-        function startCamera() {
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                qrConfig, 
-                onScanSuccess
-            ).catch(err => {
-                // Se falhar a traseira (ex: em notebook), tenta qualquer câmera disponível
-                html5QrCode.start(
-                    { facingMode: "user" }, 
-                    qrConfig, 
-                    onScanSuccess
-                ).catch(errFallback => handleCameraError(errFallback));
-            });
-        }
-
-        startCamera();
+                `<p style="color:red;">Não foi possível acessar a câmera traseira. Verifique as permissões do navegador.</p>`;
+        });
     </script>
 </body>
 </html>
