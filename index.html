@@ -86,7 +86,6 @@
             overflow: hidden;
         }
 
-        /* Camada escura para garantir leitura legível sobre qualquer imagem */
         .banner-card::before {
             content: "";
             position: absolute;
@@ -299,43 +298,26 @@
         function handleCameraError(err) {
             console.error("Erro ao iniciar a câmera:", err);
             document.getElementById('result').innerHTML = 
-                `<p style="color:red;">Não foi possível acessar a câmera. Certifique-se de estar usando HTTPS ou localhost e de permitir o acesso à câmera.</p>`;
+                `<p style="color:red;">Não foi possível acessar a câmera. Verifique se concedeu permissão no app/navegador e se a conexão é HTTPS.</p>`;
         }
 
-        // Busca os dispositivos de mídia disponíveis para evitar erros de restrição
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length > 0) {
-                // Tenta identificar a câmera traseira pelo nome/label
-                const rearCamera = devices.find(device => 
-                    device.label.toLowerCase().includes('back') || 
-                    device.label.toLowerCase().includes('traseira') || 
-                    device.label.toLowerCase().includes('environment')
-                );
-
-                // Usa a câmera traseira encontrada, ou a última câmera da lista, ou a única disponível
-                const selectedCameraId = rearCamera ? rearCamera.id : devices[devices.length - 1].id;
-
-                html5QrCode.start(
-                    selectedCameraId, 
-                    qrConfig, 
-                    onScanSuccess
-                ).catch(err => handleCameraError(err));
-            } else {
-                // Se não listar por ID, tenta a restrição padrão
-                html5QrCode.start(
-                    { facingMode: "environment" }, 
-                    qrConfig, 
-                    onScanSuccess
-                ).catch(err => handleCameraError(err));
-            }
-        }).catch(err => {
-            // Fallback para ambientes restritos ou notebooks
+        // Inicialização direta solicitando a câmera traseira (ideal para WebViews)
+        function startCamera() {
             html5QrCode.start(
-                { facingMode: "user" }, 
+                { facingMode: "environment" }, 
                 qrConfig, 
                 onScanSuccess
-            ).catch(err => handleCameraError(err));
-        });
+            ).catch(err => {
+                // Se falhar a traseira (ex: em notebook), tenta qualquer câmera disponível
+                html5QrCode.start(
+                    { facingMode: "user" }, 
+                    qrConfig, 
+                    onScanSuccess
+                ).catch(errFallback => handleCameraError(errFallback));
+            });
+        }
+
+        startCamera();
     </script>
 </body>
 </html>
