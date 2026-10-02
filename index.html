@@ -301,20 +301,30 @@
                 `<p style="color:red;">Não foi possível acessar a câmera. Verifique se concedeu permissão no app/navegador e se a conexão é HTTPS.</p>`;
         }
 
-        // Inicialização direta solicitando a câmera traseira (ideal para WebViews)
-        function startCamera() {
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                qrConfig, 
-                onScanSuccess
-            ).catch(err => {
-                // Se falhar a traseira (ex: em notebook), tenta qualquer câmera disponível
+        // Inicialização solicitando permissões explícitas para WebViews
+        async function startCamera() {
+            try {
+                // Força o gatilho da API nativa de mídia para ativar o WebChromeClient do Android
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                }
+                
+                // Inicia o scanner com a câmera traseira
                 html5QrCode.start(
-                    { facingMode: "user" }, 
+                    { facingMode: "environment" }, 
                     qrConfig, 
                     onScanSuccess
-                ).catch(errFallback => handleCameraError(errFallback));
-            });
+                ).catch(err => {
+                    // Fallback para câmera frontal se a traseira falhar
+                    html5QrCode.start(
+                        { facingMode: "user" }, 
+                        qrConfig, 
+                        onScanSuccess
+                    ).catch(errFallback => handleCameraError(errFallback));
+                });
+            } catch (err) {
+                handleCameraError(err);
+            }
         }
 
         startCamera();
