@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Leitura e Gestão de Produtos</title>
+    <!-- Importando a biblioteca html5-qrcode via CDN -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--text);
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        p.subtitle {
+            color: #64748b;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            background: var(--card-bg);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 1.2rem;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+
+        .info-group {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .info-group strong {
+            color: #475569;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-success:hover { background-color: #059669; }
+
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+
+        .btn-secondary { background-color: #64748b; color: white; }
+        .btn-secondary:hover { background-color: #475569; }
+
+        /* Formulários */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .scanner-actions {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* Estilo para o banner horizontal e menor na parte inferior */
+        .banner-link {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 130px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s;
+            margin-top: 10px;
+            background-color: #000;
+            text-decoration: none;
+        }
+
+        .banner-link:hover {
+            transform: scale(1.01);
+        }
+
+        .banner-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Textos sobrepostos no meio da imagem */
+        .banner-text-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 90%;
+            pointer-events: none;
+        }
+
+        .banner-course-title {
+            background: rgba(0, 0, 0, 0.75);
+            color: #f8fafc;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .banner-cta {
+            background: var(--primary);
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div>
+            <h1>Gestão por Código de Barras</h1>
+            <p class="subtitle">Aponte a câmera para o código de barras do produto</p>
+        </div>
+
+        <!-- Leitor de Câmera -->
+        <div id="reader"></div>
+        
+        <div class="scanner-actions" id="scan-again-container" style="display: none;">
+            <button class="btn-secondary" onclick="reiniciarLeitor()">Escanear Outro Produto</button>
+        </div>
+
+        <!-- CARD 1: Produto Encontrado -->
+        <div class="card" id="card-encontrado">
+            <h3>Produto Cadastrado</h3>
+            <div class="info-group"><strong>Nome:</strong> <span id="p-nome"></span></div>
+            <div class="info-group"><strong>Código:</strong> <span id="p-codigo"></span></div>
+            <div class="info-group"><strong>Valor:</strong> R$ <span id="p-valor"></span></div>
+            <div class="info-group"><strong>Estoque Atual:</strong> <span id="p-estoque"></span></div>
+            <div class="info-group"><strong>Localização:</strong> <span id="p-localizacao"></span></div>
+            <div class="info-group"><strong>Lote/Série:</strong> <span id="p-lote"></span></div>
+            <div class="info-group"><strong>Fornecedor:</strong> <span id="p-fornecedor"></span></div>
+            <div class="info-group"><strong>Validade:</strong> <span id="p-validade"></span></div>
+            
+            <div class="btn-group">
+                <button class="btn-primary" onclick="prepararAtualizacao()">Atualizar</button>
+                <button class="btn-danger" onclick="excluirProduto()">Excluir</button>
+            </div>
+        </div>
+
+        <!-- CARD 2: Produto Não Encontrado -->
+        <div class="card" id="card-nao-encontrado">
+            <h3>Produto Não Encontrado</h3>
+            <p>O código <strong id="nc-codigo"></strong> não está cadastrado no sistema.</p>
+            <p>Deseja cadastrar este produto?</p>
+            
+            <div class="btn-group">
+                <button class="btn-success" onclick="mostrarFormularioCadastro()">Sim, Cadastrar</button>
+                <button class="btn-secondary" onclick="reiniciarLeitor()">Não</button>
+            </div>
+        </div>
+
+        <!-- CARD 3: Formulário de Cadastro / Edição -->
+        <div class="card" id="card-formulario">
+            <h3 id="form-titulo">Novo Cadastro de Produto</h3>
+            <input type="hidden" id="form-codigo-barras">
+            
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="input-nome" placeholder="Ex: Arroz 5kg">
+            </div>
+            
+            <div class="form-group">
+                <label>Valor (R$)</label>
+                <input type="number" step="0.01" id="input-valor" placeholder="Ex: 24.90">
+            </div>
+
+            <div class="form-group">
+                <label>Quantidade em Estoque</label>
+                <input type="number" id="input-estoque" placeholder="Ex: 15">
+            </div>
+
+            <div class="form-group">
+                <label>Localização (Corredor / Prateleira)</label>
+                <input type="text" id="input-localizacao" placeholder="Ex: Corredor 3, Prateleira B">
+            </div>
+
+            <div class="form-group">
+                <label>Lote e Série</label>
+                <input type="text" id="input-lote" placeholder="Ex: LOTE-98765">
+            </div>
+
+            <div class="form-group">
+                <label>Fornecedor / Fabricante</label>
+                <input type="text" id="input-fornecedor" placeholder="Ex: Distribuidora ABC (Tel: 11 99999-9999)">
+            </div>
+            
+            <div class="form-group">
+                <label>Data de Validade</label>
+                <input type="date" id="input-validade">
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-success" onclick="salvarProduto()">Salvar Produto</button>
+                <button class="btn-secondary" onclick="reiniciarLeitor()">Cancelar</button>
+            </div>
+        </div>
+
+        <!-- BANNER ROTATIVO HORIZONTAL NA PARTE DE BAIXO -->
+        <a href="https://go.hotmart.com/B107824773A" target="_blank" class="banner-link" id="banner-link-container">
+            <img id="banner-rotativo" src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=500&q=80" alt="Curso">
+            <div class="banner-text-overlay">
+                <span class="banner-course-title" id="banner-titulo-texto">Curso de instalação de portão eletrônico</span>
+                <span class="banner-cta">Clique aqui e saiba mais</span>
+            </div>
+        </a>
+    </div>
+
+    <script>
+        let html5QrCode;
+        let codigoAtual = "";
+
+        // Lista completa com título, link e imagem de cada curso
+        const campanhasBanner = [
+            {
+                titulo: "Curso de instalação de portão eletrônico",
+                url: "https://go.hotmart.com/B107824773A",
+                imagem: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de violão",
+                url: "https://go.hotmart.com/F107827826Q",
+                imagem: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de maquiagem",
+                url: "https://go.hotmart.com/A107827458F",
+                imagem: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de boleira",
+                url: "https://go.hotmart.com/P40216046F",
+                imagem: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso pizza no cone",
+                url: "https://go.hotmart.com/R40281929W",
+                imagem: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de culinária",
+                url: "https://go.hotmart.com/H40282344V",
+                imagem: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de boleira",
+                url: "https://go.hotmart.com/J40281895D",
+                imagem: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de fotografia",
+                url: "https://go.hotmart.com/P40351385A",
+                imagem: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de inglês",
+                url: "https://go.hotmart.com/H107827897V",
+                imagem: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de Maquiagem",
+                url: "https://go.hotmart.com/Y69401421S",
+                imagem: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso pizzaiolo",
+                url: "https://go.hotmart.com/A40492719W",
+                imagem: "https://images.unsplash.com/photo-1590947132387-155cc02f3212?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso para ganho de massa",
+                url: "https://go.hotmart.com/V107827531Y",
+                imagem: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de ukulele",
+                url: "https://go.hotmart.com/O40282013L",
+                imagem: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso montagem e manutenção de computador",
+                url: "https://go.hotmart.com/P64042511V",
+                imagem: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de confeiteira",
+                url: "https://go.hotmart.com/U107827629C",
+                imagem: "https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de receita culinária e confeitaria",
+                url: "https://go.hotmart.com/S68777284X",
+                imagem: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de manutenção de celular",
+                url: "https://go.hotmart.com/W107824651H",
+                imagem: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de Marketing Digital",
+                url: "https://go.hotmart.com/R107824687S",
+                imagem: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de espanhol",
+                url: "https://go.hotmart.com/R107827879N",
+                imagem: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                titulo: "Curso de eletrônica",
+                url: "https://go.hotmart.com/Y107827491V",
+                imagem: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=500&q=80"
+            }
+        ];
+
+        function trocarBannerAleatorio() {
+            const indiceAleatorio = Math.floor(Math.random() * campanhasBanner.length);
+            const campanha = campanhasBanner[indiceAleatorio];
+            
+            const linkElement = document.getElementById('banner-link-container');
+            const imgElement = document.getElementById('banner-rotativo');
+            const tituloElement = document.getElementById('banner-titulo-texto');
+
+            if (linkElement && imgElement && tituloElement) {
+                linkElement.href = campanha.url;
+                imgElement.src = campanha.imagem;
+                tituloElement.innerText = campanha.titulo;
+            }
+        }
+
+        // Troca o conteúdo de forma aleatória a cada 5 minutos (300.000 ms)
+        setInterval(trocarBannerAleatorio, 300000);
+
+        // Inicializa o leitor da câmera
+        function iniciarLeitor() {
+            document.getElementById('scan-again-container').style.display = 'none';
+            ocultarTodosCards();
+            
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error("Erro ao iniciar a câmera:", err);
+                alert("Não foi possível acessar a câmera. Verifique as permissões.");
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            codigoAtual = decodedText;
+            console.log(`Código lido: ${codigoAtual}`);
+
+            html5QrCode.stop().then(() => {
+                document.getElementById('reader').style.display = 'none';
+                document.getElementById('scan-again-container').style.display = 'block';
+                verificarBancoDeDados(codigoAtual);
+            }).catch(err => console.error("Erro ao parar câmera", err));
+        }
+
+        function onScanFailure(error) {
+            // Ignorado intencionalmente
+        }
+
+        function reiniciarLeitor() {
+            ocultarTodosCards();
+            document.getElementById('reader').style.display = 'block';
+            iniciarLeitor();
+        }
+
+        function ocultarTodosCards() {
+            document.getElementById('card-encontrado').style.display = 'none';
+            document.getElementById('card-nao-encontrado').style.display = 'none';
+            document.getElementById('card-formulario').style.display = 'none';
+        }
+
+        function obterProdutos() {
+            const dados = localStorage.getItem('produtos_sistema');
+            return dados ? JSON.parse(dados) : {};
+        }
+
+        function salvarBancoDeDados(produtos) {
+            localStorage.setItem('produtos_sistema', JSON.stringify(produtos));
+        }
+
+        function verificarBancoDeDados(codigo) {
+            const produtos = obterProdutos();
+            
+            if (produtos[codigo]) {
+                const prod = produtos[codigo];
+                document.getElementById('p-nome').innerText = prod.nome || '-';
+                document.getElementById('p-codigo').innerText = codigo;
+                document.getElementById('p-valor').innerText = prod.valor ? Number(prod.valor).toFixed(2) : '0.00';
+                document.getElementById('p-estoque').innerText = prod.estoque !== undefined ? prod.estoque : '-';
+                document.getElementById('p-localizacao').innerText = prod.localizacao || '-';
+                document.getElementById('p-lote').innerText = prod.lote || '-';
+                document.getElementById('p-fornecedor').innerText = prod.fornecedor || '-';
+                document.getElementById('p-validade').innerText = formatarDataBR(prod.validade);
+                
+                document.getElementById('card-encontrado').style.display = 'block';
+            } else {
+                document.getElementById('nc-codigo').innerText = codigo;
+                document.getElementById('card-nao-encontrado').style.display = 'block';
+            }
+        }
+
+        function mostrarFormularioCadastro() {
+            ocultarTodosCards();
+            document.getElementById('form-titulo').innerText = "Cadastrar Novo Produto";
+            document.getElementById('form-codigo-barras').value = codigoAtual;
+            document.getElementById('input-nome').value = "";
+            document.getElementById('input-valor').value = "";
+            document.getElementById('input-estoque').value = "";
+            document.getElementById('input-localizacao').value = "";
+            document.getElementById('input-lote').value = "";
+            document.getElementById('input-fornecedor').value = "";
+            document.getElementById('input-validade').value = "";
+            
+            document.getElementById('card-formulario').style.display = 'block';
+        }
+
+        function prepararAtualizacao() {
+            const produtos = obterProdutos();
+            const prod = produtos[codigoAtual];
+
+            ocultarTodosCards();
+            document.getElementById('form-titulo').innerText = "Atualizar Cadastro do Produto";
+            document.getElementById('form-codigo-barras').value = codigoAtual;
+            document.getElementById('input-nome').value = prod.nome || '';
+            document.getElementById('input-valor').value = prod.valor || '';
+            document.getElementById('input-estoque').value = prod.estoque || '';
+            document.getElementById('input-localizacao').value = prod.localizacao || '';
+            document.getElementById('input-lote').value = prod.lote || '';
+            document.getElementById('input-fornecedor').value = prod.fornecedor || '';
+            document.getElementById('input-validade').value = prod.validade || '';
+            
+            document.getElementById('card-formulario').style.display = 'block';
+        }
+
+        function salvarProduto() {
+            const nome = document.getElementById('input-nome').value.trim();
+            const valor = document.getElementById('input-valor').value;
+            const estoque = document.getElementById('input-estoque').value;
+            const localizacao = document.getElementById('input-localizacao').value.trim();
+            const lote = document.getElementById('input-lote').value.trim();
+            const fornecedor = document.getElementById('input-fornecedor').value.trim();
+            const validade = document.getElementById('input-validade').value;
+
+            if (!nome || !valor || !validade) {
+                alert("Por favor, preencha pelo menos os campos obrigatórios: Nome, Valor e Validade.");
+                return;
+            }
+
+            const produtos = obterProdutos();
+            produtos[codigoAtual] = {
+                nome: nome,
+                valor: parseFloat(valor),
+                estoque: estoque !== "" ? parseInt(estoque) : 0,
+                localizacao: localizacao,
+                lote: lote,
+                fornecedor: fornecedor,
+                validade: validade
+            };
+
+            salvarBancoDeDados(produtos);
+            alert("Produto salvo com sucesso!");
+            reiniciarLeitor();
+        }
+
+        function excluirProduto() {
+            if (confirm("Tem certeza que deseja excluir este produto do sistema?")) {
+                const produtos = obterProdutos();
+                delete produtos[codigoAtual];
+                salvarBancoDeDados(produtos);
+                alert("Produto excluído com sucesso!");
+                reiniciarLeitor();
+            }
+        }
+
+        function formatarDataBR(dataIso) {
+            if (!dataIso) return '-';
+            const partes = dataIso.split('-');
+            if (partes.length !== 3) return dataIso;
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+
+        window.addEventListener('load', () => {
+            trocarBannerAleatorio();
+            iniciarLeitor();
+        });
+    </script>
+</body>
+</html>
